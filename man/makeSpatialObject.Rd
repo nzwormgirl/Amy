@@ -21,7 +21,7 @@ makeSpatialObject(myData, myX, myY, currentProj = NULL, newProj = NULL)
 This function allows you to create a SpatialPointsDataFrame from a data.frame and project (and potentially reproject) it to a specified projection.
 }
 \examples{
-quakesSpatial <- makeSpatialObject(quakes,myX="long",myY="lat",currentProj = projWGS84)
+makeSpatialObject(quakes,myX="long",myY="lat",currentProj = projWGS84)
 
 }
 \keyword{shapefile}

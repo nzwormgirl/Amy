@@ -9,17 +9,17 @@
 #' @keywords shapefile
 #' @export
 #' @examples
-#' quakesSpatial <- makeSpatialObject(quakes,myX="long",myY="lat",currentProj = projWGS84)
+#' makeSpatialObject(quakes,myX="long",myY="lat",currentProj = projWGS84)
 #'
 
 makeSpatialObject <- function(myData,myX,myY,currentProj=NULL,newProj = NULL){
-  require(sp)
+
   coordinates(myData) <- cbind(myData[,myX] , myData[,myY])
 
   if(!is.null(currentProj)) {
     proj4string(myData) <- CRS(currentProj)
     if(!is.null(newProj)){
-      myData <- spTransform(myData,CRS(newProj))
+      myData <- sp::spTransform(myData,CRS(newProj))
     }
   }
 
@@ -39,18 +39,18 @@ makeSpatialObject <- function(myData,myX,myY,currentProj=NULL,newProj = NULL){
 #' @keywords shapefile
 #' @export
 #' @examples
-#' quakesSpatial <- addNewCoordinates(quakes,myX="long",myY="lat",myNewX = "easting",myNewY = "northing", currentProj = projWGS84, newProj = projNZTM)
+#' addNewCoordinates(quakes,myX="long",myY="lat",myNewX = "easting",myNewY = "northing", currentProj = projWGS84, newProj = projNZTM)
 #'
 
 addNewCoordinates <- function(myData,myX,myY,myNewX = "X",myNewY = "Y",currentProj=NULL,newProj = NULL){
 
-  myNewX <- quo_name(myNewX)
-  myNewY <- quo_name(myNewY)
+  myNewX <- dplyr::quo_name(myNewX)
+  myNewY <- dplyr::quo_name(myNewY)
 
   # identify rows with missing coordinates
   myNArows <- which(rowSums(is.na(myData[,c(myX,myY)]))>0)
 
-  myOut <- bind_rows(
+  myOut <- dplyr::bind_rows(
     # calculate new coordinates for all rows with spatial data
     as.data.frame(
     makeSpatialObject(myData[-myNArows,],myX,myY,currentProj,newProj)
