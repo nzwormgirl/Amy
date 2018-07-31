@@ -42,30 +42,30 @@ makeSpatialObject <- function(myData,myX,myY,currentProj=NULL,newProj = NULL){
 #' addNewCoordinates(quakes,myX="long",myY="lat",myNewX = "easting",myNewY = "northing", currentProj = projWGS84, newProj = projNZTM)
 #'
 
-addNewCoordinates <- function(myData,myX,myY,myNewX = "X",myNewY = "Y",currentProj=NULL,newProj = NULL){
+addNewCoordinates <- function (myData, myX, myY, myNewX = "X", myNewY = "Y", currentProj = NULL, newProj = NULL) {
+  # identify rows that are missing spatial data
+  myNArows <- which(rowSums(is.na(myData[, c(myX, myY)])) > 0)
 
-  # identify rows with missing coordinates
-  myNArows <- which(rowSums(is.na(myData[,c(myX,myY)]))>0)
+  # add in empty columns if the new X & Y columns don't already exist
+  myData[c(myNewX,myNewY)[!(c(myNewX,myNewY) %in% colnames(myData))]]  <-  NA
 
-  if(length(myNArows)> 0){
-    # calculate new coordinates for all rows with spatial data
-    myOut <- as.data.frame(
-      makeSpatialObject(myData[-myNArows,],myX,myY,currentProj,newProj)
-    )
+  if (length(myNArows) > 0) {
+    # missing spatial data - run calculation on rows with spatial data and bind the missing rows to the bottom
+    myOut <- as.data.frame(makeSpatialObject(myData[-myNArows,], myX, myY, currentProj, newProj))
 
-    names(myOut)[c(ncol(myOut)-1,ncol(myOut))] <- c(myNewX,myNewY)
+    myOut <- dplyr::bind_rows(myOut, myData[myNArows,])
+  } else {
+    # no missing spatial data - run calculation on full dataframe
+    myOut <- as.data.frame(makeSpatialObject(myData, myX, myY, currentProj, newProj))
 
-    # add back in rows with missing coordinate data
-    myOut <- dplyr::bind_rows(myOut,
-                              myData[myNArows,])
-  } else{
-    myOut <- as.data.frame(
-      makeSpatialObject(myData,myX,myY,currentProj,newProj)
-    )
-
-    names(myOut)[c(ncol(myOut)-1,ncol(myOut))] <- c(myNewX,myNewY)
   }
 
+  # where coordinates don't already exist, replace with the new projected coordinates
+  myOut[,myNewX] <- ifelse(is.na(myOut[,myNewX]),myOut[,ncol(myOut) - 1], myOut[,myNewX])
+  myOut[,myNewY] <- ifelse(is.na(myOut[,myNewY]),myOut[,ncol(myOut)], myOut[,myNewY])
+
+  # remove unnecessary projected columns
+  myOut[c(ncol(myOut) - 1, ncol(myOut))] <- NULL
 
   return(myOut)
 }
