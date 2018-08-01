@@ -42,6 +42,7 @@ makeSpatialObject <- function(myData,myX,myY,currentProj=NULL,newProj = NULL){
 #' addNewCoordinates(quakes,myX="long",myY="lat",myNewX = "easting",myNewY = "northing", currentProj = projWGS84, newProj = projNZTM)
 #'
 
+
 addNewCoordinates <- function (myData, myX, myY, myNewX = "X", myNewY = "Y", currentProj = NULL, newProj = NULL) {
   # identify rows that are missing spatial data
   myNArows <- which(rowSums(is.na(myData[, c(myX, myY)])) > 0)
@@ -49,23 +50,31 @@ addNewCoordinates <- function (myData, myX, myY, myNewX = "X", myNewY = "Y", cur
   # add in empty columns if the new X & Y columns don't already exist
   myData[c(myNewX,myNewY)[!(c(myNewX,myNewY) %in% colnames(myData))]]  <-  NA
 
+  # get names of original data object
+  myNames <- c(names(myData), "coords.x","coords.y")
+
   if (length(myNArows) > 0) {
     # missing spatial data - run calculation on rows with spatial data and bind the missing rows to the bottom
     myOut <- as.data.frame(makeSpatialObject(myData[-myNArows,], myX, myY, currentProj, newProj))
+    names(myOut) <- myNames
 
-    myOut <- dplyr::bind_rows(myOut, myData[myNArows,])
+    myNAData <- myData[myNArows,]
+    myNAData[,c("coords.x","coords.y")] <- NA
+
+    myOut <- dplyr::bind_rows(myOut, myNAData)
   } else {
     # no missing spatial data - run calculation on full dataframe
     myOut <- as.data.frame(makeSpatialObject(myData, myX, myY, currentProj, newProj))
+    names(myOut) <- myNames
 
   }
 
   # where coordinates don't already exist, replace with the new projected coordinates
-  myOut[,myNewX] <- ifelse(is.na(myOut[,myNewX]),myOut[,ncol(myOut) - 1], myOut[,myNewX])
-  myOut[,myNewY] <- ifelse(is.na(myOut[,myNewY]),myOut[,ncol(myOut)], myOut[,myNewY])
+  myOut[,myNewX] <- ifelse(is.na(myOut[,myNewX]),myOut[,"coords.x"], myOut[,myNewX])
+  myOut[,myNewY] <- ifelse(is.na(myOut[,myNewY]),myOut[,"coords.y"], myOut[,myNewY])
 
   # remove unnecessary projected columns
-  myOut[c(ncol(myOut) - 1, ncol(myOut))] <- NULL
+  myOut[c("coords.x","coords.y")] <- NULL
 
   return(myOut)
 }
